@@ -70,4 +70,3 @@ Constants at the top of `components/hero/animation/scroll-scene.ts`: `PIN_LENGTH
 2. **Settings → Pages → Source: GitHub Actions.**
 3. The workflow in `.github/workflows/deploy.yml` builds and publishes. The base path is taken from the repo name automatically.
 
-If the repo is named `<username>.github.io`, set `NEXT_PUBLIC_BASE_PATH` to an empty string in the workflow.
