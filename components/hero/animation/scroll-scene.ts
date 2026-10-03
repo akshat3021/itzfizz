@@ -1,9 +1,12 @@
 import { gsap, ScrollTrigger } from '@/lib/gsap'
+import { createParticles } from './particles'
 
 /** Scroll distance the hero stays pinned for, as a multiple of its height. */
 const PIN_LENGTH = 3
-/** Smoothing (seconds) between scroll position and animation progress. */
+/** Smoothing (seconds) between scroll position and progress. Lower when Lenis
+ *  is already smoothing the input, to avoid double-smoothing lag. */
 const SCRUB_SMOOTHING = 0.8
+const SCRUB_SMOOTHING_WITH_LENIS = 0.3
 /** Gentle ease-in/out so the car pulls away and settles like a real vehicle. */
 const CAR_EASE = 'power1.inOut'
 /** The car starts/ends at least this far off-screen, as a fraction of its width. */
@@ -11,13 +14,20 @@ const MIN_BLEED = 0.1
 /** The car always travels at least this fraction of the screen width, so the
  *  motion still reads on phones where the car nearly fills the screen. */
 const MIN_TRAVEL = 0.7
-/** Length of one headline flare, in timeline units (the full scroll is 1). */
+/** Length of one headline light-up, in timeline units (the full scroll is 1). */
 const FLARE_LENGTH = 0.14
-/** Car speed (px/s) at which the light streak reaches full length. */
-const FULL_STREAK_SPEED = 700
+/** Car speed (px/s) at which speed-driven effects reach full strength. */
+const FULL_SPEED = 700
+/** Car grows to this scale by the end of the scroll. */
+const END_SCALE = 1.08
+/** Maximum lean (degrees) at full speed. */
+const MAX_TILT = 2.5
+/** God rays: resting opacity, and how far they sweep (degrees) over the scroll. */
+const RAYS_IDLE = 0.25
+const RAYS_SWEEP = 24
+const GLOW_IDLE = 0.6
 
 const VOLT = '#c6f135'
-const WHITE = '#ffffff'
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -33,36 +43,53 @@ function invertEase(ease: (t: number) => number, target: number) {
   return (low + high) / 2
 }
 
+interface SceneOptions {
+  /** True when Lenis is smoothing scroll input. */
+  smooth?: boolean
+}
+
 /**
  * Pins the hero and ties everything to scroll progress (0 -> 1):
- *  - the car travels left to right (translateX, eased)
- *  - each headline letter flares as the car passes it
- *  - the grid drifts the other way, selling the sense of speed
- *  - a light streak behind the car stretches with its *actual* speed
+ *  - the car travels left to right (translateX, eased), growing slightly
+ *  - each headline letter lights up as the car passes it and stays lit
+ *  - the grid and the god rays move with the scroll
+ *  - streak, rays, ground glow, lean and particles react to the car's
+ *    *actual* speed, so they build as it accelerates and fade when it stops
  *
  * Layout is read in exactly two places (`measure` and `placeFlares`), both of
- * which run on ScrollTrigger refresh, never inside a scroll handler.
+ * which run on ScrollTrigger refresh, never inside a scroll handler or the
+ * per-frame ticker (which only uses cached numbers).
  *
  * Returns a cleanup function.
  */
-export function createScrollScene(root: HTMLElement): () => void {
+export function createScrollScene(root: HTMLElement, { smooth = false }: SceneOptions = {}): () => void {
   const q = gsap.utils.selector(root)
   const car = q<HTMLElement>('[data-hero="car"]')[0]
+  const tilt = q<HTMLElement>('[data-hero="car-tilt"]')[0]
+  const lean = q<HTMLElement>('[data-hero="car-lean"]')[0]
   const trail = q<HTMLElement>('[data-hero="trail"]')[0]
+  const rays = q<HTMLElement>('[data-hero="rays"]')[0]
+  const groundGlow = q<HTMLElement>('[data-hero="ground-glow"]')[0]
+  const particlesEl = q<HTMLElement>('[data-hero="particles"]')[0]
   const grid = q<HTMLElement>('[data-hero="grid"]')[0]
   const hint = q<HTMLElement>('[data-hero="hint-label"]')[0]
   const letters = q<HTMLElement>('[data-hero="letter"]')
-  if (!car || !trail || !grid) return () => {}
+  if (!car || !tilt || !lean || !trail || !rays || !groundGlow || !grid) return () => {}
 
   const ease = gsap.parseEase(CAR_EASE)
 
+  // Cached layout numbers, refreshed only on ScrollTrigger refresh.
+  let carHeight = car.offsetHeight
+
   const measure = () => {
     const width = car.offsetWidth
+    carHeight = car.offsetHeight
     const stageWidth = root.clientWidth
     // travel = stageWidth - width + 2 * bleed, so solve for the bleed needed.
     const bleed = Math.max(width * MIN_BLEED, (width - stageWidth * (1 - MIN_TRAVEL)) / 2)
     return { width, start: -bleed, end: stageWidth - width + bleed }
   }
+  let cachedWidth = measure().width
 
   const timeline = gsap.timeline({
     defaults: { ease: 'none' },
@@ -71,56 +98,68 @@ export function createScrollScene(root: HTMLElement): () => void {
       start: 'top top',
       end: `+=${PIN_LENGTH * 100}%`,
       pin: true,
-      scrub: SCRUB_SMOOTHING,
+      scrub: smooth ? SCRUB_SMOOTHING_WITH_LENIS : SCRUB_SMOOTHING,
       anticipatePin: 1,
       invalidateOnRefresh: true, // re-run the function-based values on resize
     },
   })
 
-  // 1. The car: the core of the scene.
+  // 1. The car: the core of the scene, plus a slow scale-up for drama.
   timeline.fromTo(
     car,
     { x: () => measure().start },
     { x: () => measure().end, ease: CAR_EASE, duration: 1 },
     0,
   )
+  timeline.fromTo(tilt, { scale: 1 }, { scale: END_SCALE, ease: CAR_EASE, duration: 1 }, 0)
 
-  // 2. Grid drifts opposite to the car (camera-follow feel).
+  // 2. Grid drifts opposite to the car (camera-follow); rays sweep with progress.
   timeline.fromTo(
     grid,
     { x: 0 },
     { x: () => -(grid.offsetWidth - root.clientWidth), ease: CAR_EASE, duration: 1 },
     0,
   )
+  timeline.fromTo(rays, { rotation: -RAYS_SWEEP / 2 }, { rotation: RAYS_SWEEP / 2, ease: CAR_EASE, duration: 1 }, 0)
 
-  // 3. Scroll hint fades as soon as the user starts.
-  if (hint) timeline.to(hint, { autoAlpha: 0, duration: 0.05 }, 0)
+  // 3. Scroll hint fades in step with scroll progress (gone by ~15%).
+  if (hint) timeline.to(hint, { autoAlpha: 0, duration: 0.15 }, 0)
 
-  // 4. Headline flares. One tween per letter; its position on the timeline is
-  //    the moment the car's centre reaches that letter.
+  // 4. Headline: a letter lights up (pop, then settle lit) the moment the car's
+  //    centre reaches it, and stays lit. One small timeline per letter; its
+  //    position on the main timeline is derived from the letter's real x.
   const flares = letters.map((letter) => {
     const pulse = letter.querySelector<HTMLElement>('[data-hero="pulse"]')
-    const tween = gsap.to(pulse ?? letter, {
-      keyframes: {
-        '50%': { color: VOLT, yPercent: -10, scale: 1.08 },
-        '100%': { color: WHITE, yPercent: 0, scale: 1 },
-        easeEach: 'sine.inOut',
+    const glow = letter.querySelector<HTMLElement>('[data-hero="glow"]')
+    const flare = gsap.timeline({ defaults: { ease: 'none' } })
+    flare.to(
+      pulse ?? letter,
+      {
+        keyframes: {
+          '45%': { color: VOLT, yPercent: -10, scale: 1.1 },
+          '100%': { color: VOLT, yPercent: 0, scale: 1 },
+          easeEach: 'sine.inOut',
+        },
+        duration: FLARE_LENGTH,
       },
-      duration: FLARE_LENGTH,
-    })
-    timeline.add(tween, 0)
-    return { letter, tween }
+      0,
+    )
+    // Explicit start value: GSAP then never reads the DOM when this first renders.
+    if (glow) flare.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: FLARE_LENGTH * 0.6 }, 0)
+    timeline.add(flare, 0)
+    return { letter, flare }
   })
 
   const placeFlares = () => {
     const { width, start, end } = measure()
+    cachedWidth = width
     const stageLeft = root.getBoundingClientRect().left
-    for (const { letter, tween } of flares) {
+    for (const { letter, flare } of flares) {
       const rect = letter.getBoundingClientRect()
       const letterCenter = rect.left - stageLeft + rect.width / 2
       const travelled = clamp((letterCenter - width / 2 - start) / (end - start), 0, 1)
       const progress = invertEase(ease, travelled)
-      tween.startTime(clamp(progress - FLARE_LENGTH / 2, 0, 1 - FLARE_LENGTH))
+      flare.startTime(clamp(progress - FLARE_LENGTH / 2, 0, 1 - FLARE_LENGTH))
     }
   }
 
@@ -129,26 +168,45 @@ export function createScrollScene(root: HTMLElement): () => void {
   // Web-font metrics change letter widths, so re-measure once fonts are ready.
   void document.fonts?.ready.then(() => ScrollTrigger.refresh())
 
-  // 5. Speed streak: follows the car's smoothed on-screen speed, so it grows as
-  //    the car accelerates and fades when it stops, whatever the scroll input.
+  // 5. Speed-driven effects, all from ONE ticker callback using cached numbers
+  //    (gsap.getProperty reads GSAP's cache, not the DOM).
   const setStreakScale = gsap.quickSetter(trail, 'scaleX') as (value: number) => void
   const setStreakOpacity = gsap.quickSetter(trail, 'opacity') as (value: number) => void
-  let lastX = Number(gsap.getProperty(car, 'x'))
-  let smoothedSpeed = 0
+  const setRaysOpacity = gsap.quickSetter(rays, 'opacity') as (value: number) => void
+  const setGlowOpacity = gsap.quickSetter(groundGlow, 'opacity') as (value: number) => void
+  // quickTo (not quickSetter): reliably animates `rotation` and adds gentle easing.
+  const setLean = gsap.quickTo(lean, 'rotation', { duration: 0.25, ease: 'power2.out' })
+  const particles = particlesEl ? createParticles(particlesEl) : null
 
-  const updateStreak = (_time: number, deltaMs: number) => {
+  let lastX = Number(gsap.getProperty(car, 'x'))
+  let smoothedSpeed = 0 // signed: negative when scrolling back
+  let lastLean = 0
+
+  const updateEffects = (_time: number, deltaMs: number) => {
+    const dt = Math.min(Math.max(deltaMs, 1), 50) / 1000
     const x = Number(gsap.getProperty(car, 'x'))
-    const speed = Math.abs(x - lastX) / (Math.max(deltaMs, 1) / 1000)
+    smoothedSpeed += ((x - lastX) / dt - smoothedSpeed) * 0.12
     lastX = x
-    smoothedSpeed += (speed - smoothedSpeed) * 0.12
-    const intensity = clamp(smoothedSpeed / FULL_STREAK_SPEED, 0, 1)
+
+    const signed = clamp(smoothedSpeed / FULL_SPEED, -1, 1)
+    const intensity = Math.abs(signed)
+
     setStreakScale(intensity)
     setStreakOpacity(intensity ** 0.7) // fades in faster than it stretches
+    setRaysOpacity(RAYS_IDLE + (1 - RAYS_IDLE) * intensity)
+    setGlowOpacity(GLOW_IDLE + (1 - GLOW_IDLE) * intensity)
+    const leanTarget = signed * MAX_TILT
+    if (Math.abs(leanTarget - lastLean) > 0.005) {
+      setLean(leanTarget)
+      lastLean = leanTarget
+    }
+    particles?.update(dt, intensity, x + cachedWidth * 0.08, carHeight)
   }
-  gsap.ticker.add(updateStreak)
+  gsap.ticker.add(updateEffects)
 
   return () => {
-    gsap.ticker.remove(updateStreak)
+    gsap.ticker.remove(updateEffects)
+    particles?.destroy()
     ScrollTrigger.removeEventListener('refreshInit', placeFlares)
     timeline.scrollTrigger?.kill()
     timeline.kill()

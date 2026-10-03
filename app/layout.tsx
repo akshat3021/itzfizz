@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
+import { CustomCursor } from '@/components/custom-cursor'
 import './globals.css'
 
 // Archivo is a variable font with a width axis, so one file gives both the
@@ -37,7 +38,11 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: MARK_JS_ENABLED }} />
       </head>
-      <body className="bg-ink font-sans text-white antialiased">{children}</body>
+      <body className="bg-ink font-sans text-white antialiased">
+        {children}
+        <div aria-hidden="true" className="grain" />
+        <CustomCursor />
+      </body>
     </html>
   )
 }

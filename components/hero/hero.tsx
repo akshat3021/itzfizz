@@ -38,7 +38,7 @@ export function Hero() {
           className="flex justify-center text-xs text-white/50"
         >
           <span data-hero="hint-label" className="flex items-center gap-2">
-            Scroll to drive <ChevronDown className="size-3.5 animate-bounce text-volt" />
+            Scroll to accelerate <ChevronDown className="size-3.5 animate-bounce text-volt" />
           </span>
         </div>
       </div>
