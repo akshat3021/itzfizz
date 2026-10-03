@@ -4,7 +4,7 @@ A hero section where a car drives across the screen as you scroll, built with **
 
 ![Preview](docs/preview.jpg)
 
-**Live demo:** [_add your GitHub Pages URL here_](https://akshat3021.github.io/itzfizz/)
+**Live demo:** [_https://github.com/akshat3021/itzfizz.git](https://akshat3021.github.io/itzfizz/)
 
 ## What it does
 
