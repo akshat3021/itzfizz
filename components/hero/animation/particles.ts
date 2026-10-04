@@ -1,11 +1,11 @@
 /**
- * Recycled dust / light-streak particles trailing the car.
+ * Recycled dust / light-streak particles trailing the plane.
  *
  * - Elements come from a fixed pool rendered by <HeroParticles />; nothing is
  *   created or destroyed per frame.
  * - Only transform and opacity are written, via inline styles, from the
  *   scene's single ticker callback. No layout is ever read here.
- * - Spawning stops when the car is slow; live particles then finish fading.
+ * - Spawning stops when the plane is slow; live particles then finish fading.
  */
 interface Particle {
   el: HTMLElement

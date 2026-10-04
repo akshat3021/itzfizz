@@ -1,3 +1,5 @@
+import { hero } from '@/lib/hero-parts'
+
 /**
  * Playful outlined doodles in the Itzfizz style (thick black outline, flat
  * brand colours). Purely decorative. The outer span fades in with the intro;
@@ -18,7 +20,15 @@ const doodles = [
     key: 'burst',
     className: 'right-[3%] top-[27%] size-20 lg:size-28',
     spin: 70,
-    svg: <polygon points={starPoints(11, 46, 26)} fill="white" stroke={STROKE} strokeWidth={3} strokeLinejoin="round" />,
+    svg: (
+      <polygon
+        points={starPoints(11, 46, 26)}
+        fill="white"
+        stroke={STROKE}
+        strokeWidth={3}
+        strokeLinejoin="round"
+      />
+    ),
   },
   {
     key: 'ring',
@@ -37,8 +47,20 @@ const doodles = [
     spin: 40,
     svg: (
       <>
-        <path d="M6 50 q11 -34 22 0 t22 0 t22 0 t22 0" fill="none" stroke={STROKE} strokeWidth="16" strokeLinecap="round" />
-        <path d="M6 50 q11 -34 22 0 t22 0 t22 0 t22 0" fill="none" stroke="var(--color-tangerine)" strokeWidth="10" strokeLinecap="round" />
+        <path
+          d="M6 50 q11 -34 22 0 t22 0 t22 0 t22 0"
+          fill="none"
+          stroke={STROKE}
+          strokeWidth="16"
+          strokeLinecap="round"
+        />
+        <path
+          d="M6 50 q11 -34 22 0 t22 0 t22 0 t22 0"
+          fill="none"
+          stroke="var(--color-tangerine)"
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
       </>
     ),
   },
@@ -50,12 +72,12 @@ export function HeroDoodles() {
       {doodles.map((doodle) => (
         <span
           key={doodle.key}
-          data-hero="doodle-intro"
+          {...hero('doodle-intro')}
           data-intro
           className={`absolute ${doodle.className}`}
         >
           <svg
-            data-hero="doodle"
+            {...hero('doodle')}
             data-spin={doodle.spin}
             viewBox="0 0 100 100"
             className="block h-auto w-full overflow-visible"

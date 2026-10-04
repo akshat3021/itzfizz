@@ -28,9 +28,7 @@ export const viewport: Viewport = {
 // page simply renders fully visible.
 const MARK_JS_ENABLED = "document.documentElement.classList.add('js')"
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
