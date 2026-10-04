@@ -11,7 +11,7 @@ export function HeroParticles() {
       {Array.from({ length: POOL_SIZE }, (_, index) => (
         <span
           key={index}
-          className="absolute left-0 top-0 rounded-full bg-volt opacity-0"
+          className="absolute left-0 top-0 rounded-full bg-ink opacity-0"
         />
       ))}
     </div>

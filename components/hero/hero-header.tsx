@@ -1,34 +1,37 @@
-import { ArrowUpRight, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { CONTACT_HREF } from '@/lib/hero-content'
+import { CONTACT_HREF, NAV_LINKS } from '@/lib/hero-content'
 
+/** Black pill navigation, like itzfizz.com. */
 export function HeroHeader() {
   return (
-    <header
-      data-hero="header"
-      data-intro
-      className="relative z-20 flex items-center justify-between"
-    >
-      <a href="#top" className="group flex items-center gap-3" aria-label="Itzfizz Digital home">
-        <span className="flex size-9 items-center justify-center rounded-full bg-volt text-ink transition-transform group-hover:rotate-12">
-          <Sparkles className="size-4" strokeWidth={2.5} />
-        </span>
-        <span className="text-sm font-semibold tracking-[0.12em]">
-          ITZFIZZ<span className="text-volt">.</span>
-        </span>
-      </a>
-
-      <p className="hidden text-xs text-white/60 md:block">Independent digital agency, est. 2016</p>
-
-      <Button
-        nativeButton={false}
-        render={<a href={CONTACT_HREF} />}
-        variant="outline"
-        className="h-9 rounded-full border-white/20 bg-white/5 px-4 text-xs font-semibold text-white hover:border-volt hover:bg-volt hover:text-ink"
+    <header data-hero="header" data-intro className="relative z-20">
+      <nav
+        aria-label="Primary"
+        className="mx-auto flex max-w-6xl items-center justify-between rounded-full bg-ink py-2 pl-5 pr-2 text-white"
       >
-        Start a project
-        <ArrowUpRight data-icon="inline-end" />
-      </Button>
+        <a href="#top" aria-label="Itzfizz Digital home" className="text-lg font-extrabold tracking-wider">
+          ITZFIZZ<span className="text-brand">.</span>
+        </a>
+
+        <ul className="hidden items-center gap-1 text-sm font-semibold md:flex">
+          {NAV_LINKS.map((link) => (
+            <li key={link.label}>
+              <a
+                href={link.href}
+                className="rounded-full px-4 py-2 transition-colors hover:bg-white hover:text-ink"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <a
+          href={CONTACT_HREF}
+          className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-ink transition-transform hover:-translate-y-0.5"
+        >
+          Get Started
+        </a>
+      </nav>
     </header>
   )
 }

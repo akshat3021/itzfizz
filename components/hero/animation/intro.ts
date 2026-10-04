@@ -29,6 +29,13 @@ export function createIntro(root: HTMLElement): () => void {
     )
     .from(q('[data-hero="tagline"]'), { autoAlpha: 0, y: 14, duration: 0.9 }, 1.0)
 
+  // Brand decorations pop in with the headline
+  tl.from(q('[data-hero="disc"]'), { autoAlpha: 0, scale: 0.6, duration: 1.2, ease: 'back.out(1.6)' }, 0.5).from(
+    q('[data-hero="doodle-intro"]'),
+    { autoAlpha: 0, scale: 0.4, duration: 0.9, stagger: 0.12, ease: 'back.out(2)' },
+    0.9,
+  )
+
   // 2. Car enters from fully off-screen left. The offset is its own width, and
   //    it already starts partly off-screen, so it begins entirely out of view.
   tl.from(

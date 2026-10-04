@@ -27,8 +27,6 @@ const RAYS_IDLE = 0.25
 const RAYS_SWEEP = 24
 const GLOW_IDLE = 0.6
 
-const VOLT = '#c6f135'
-
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
 /** Finds t where ease(t) === target. Eases are monotonic, so bisection works. */
@@ -51,7 +49,7 @@ interface SceneOptions {
 /**
  * Pins the hero and ties everything to scroll progress (0 -> 1):
  *  - the car travels left to right (translateX, eased), growing slightly
- *  - each headline letter lights up as the car passes it and stays lit
+ *  - a yellow tile pops in behind each headline letter as the car passes it
  *  - the grid and the god rays move with the scroll
  *  - streak, rays, ground glow, lean and particles react to the car's
  *    *actual* speed, so they build as it accelerates and fade when it stops
@@ -122,30 +120,42 @@ export function createScrollScene(root: HTMLElement, { smooth = false }: SceneOp
   )
   timeline.fromTo(rays, { rotation: -RAYS_SWEEP / 2 }, { rotation: RAYS_SWEEP / 2, ease: CAR_EASE, duration: 1 }, 0)
 
+  // Decorative doodles turn slowly with the scroll.
+  q<SVGElement>('[data-hero="doodle"]').forEach((doodle) => {
+    timeline.to(doodle, { rotation: Number(doodle.dataset.spin ?? 45), ease: 'none', duration: 1 }, 0)
+  })
+
   // 3. Scroll hint fades in step with scroll progress (gone by ~15%).
   if (hint) timeline.to(hint, { autoAlpha: 0, duration: 0.15 }, 0)
 
-  // 4. Headline: a letter lights up (pop, then settle lit) the moment the car's
-  //    centre reaches it, and stays lit. One small timeline per letter; its
-  //    position on the main timeline is derived from the letter's real x.
+  // 4. Headline: a yellow tile pops in behind each letter the moment the car's
+  //    centre reaches it, and stays. One small timeline per letter; its position
+  //    on the main timeline is derived from the letter's real x-position.
   const flares = letters.map((letter) => {
     const pulse = letter.querySelector<HTMLElement>('[data-hero="pulse"]')
-    const glow = letter.querySelector<HTMLElement>('[data-hero="glow"]')
+    const tile = letter.querySelector<HTMLElement>('[data-hero="glow"]')
     const flare = gsap.timeline({ defaults: { ease: 'none' } })
     flare.to(
       pulse ?? letter,
       {
         keyframes: {
-          '45%': { color: VOLT, yPercent: -10, scale: 1.1 },
-          '100%': { color: VOLT, yPercent: 0, scale: 1 },
+          '45%': { yPercent: -8, scale: 1.08 },
+          '100%': { yPercent: 0, scale: 1 },
           easeEach: 'sine.inOut',
         },
         duration: FLARE_LENGTH,
       },
       0,
     )
-    // Explicit start value: GSAP then never reads the DOM when this first renders.
-    if (glow) flare.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: FLARE_LENGTH * 0.6 }, 0)
+    // Explicit start values: GSAP then never reads the DOM when this first renders.
+    if (tile) {
+      flare.fromTo(
+        tile,
+        { opacity: 0, scale: 0.55 },
+        { opacity: 1, scale: 1, ease: 'back.out(2)', duration: FLARE_LENGTH * 0.7 },
+        0,
+      )
+    }
     timeline.add(flare, 0)
     return { letter, flare }
   })

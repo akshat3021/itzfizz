@@ -77,9 +77,9 @@ export function CustomCursor() {
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50">
       <div
         ref={ring}
-        className="invisible absolute left-0 top-0 size-10 rounded-full border border-volt/60"
+        className="invisible absolute left-0 top-0 size-10 rounded-full border-2 border-ink/40"
       />
-      <div ref={dot} className="invisible absolute left-0 top-0 size-3 rounded-full bg-volt" />
+      <div ref={dot} className="invisible absolute left-0 top-0 size-4 rounded-full border-2 border-ink bg-brand" />
     </div>
   )
 }

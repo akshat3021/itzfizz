@@ -10,18 +10,24 @@ A hero section where a car drives across the screen as you scroll, built with **
 
 | Requirement | Implementation |
 |---|---|
-| Letter-spaced headline above the fold | `W E L C O M E  I T Z F I Z Z` in Archivo Expanded, centred, with impact stats below |
+| Letter-spaced headline above the fold | `W E L C O M E  I T Z F I Z Z` in Montserrat ExtraBold, centred, with impact stats below |
 | Load animation | GSAP timeline: header, staggered letters, tagline, car glide-in, then stats one by one (rule draws, counter ticks up) |
 | Scroll-based animation | ScrollTrigger pins the hero for ~3 screens; the car's `translateX` is **scrubbed to scroll progress**, with easing and 0.8s smoothing |
 | Smooth and performant | Only `transform` and `opacity` are animated; layout is read only on ScrollTrigger refresh, never in a scroll handler |
 
 Extras tied to the same scroll progress:
-- Each headline letter lights up (with a glow) as the car passes and stays lit; it resets when you scroll back.
+- A yellow "sticker tile" pops in behind each headline letter as the car passes and stays; it resets when you scroll back.
 - The car scales up (to 1.08) and leans slightly with its speed.
-- A thick glowing trail, god rays, ground glow and a small pool of dust/light-streak particles all react to the car's *actual* speed and fade when it stops.
+- A speed-line trail, sun rays, ground shadow and a small pool of dust/speed-dash particles all react to the car's *actual* speed and fade when it stops.
 - The background grid drifts the opposite way; Lenis gives inertial smooth scrolling.
 - Entrance order on load: headline letters, then the car glides in from the left, then the stats.
 - Small details: "Scroll to accelerate" hint tied to scroll, custom cursor (mouse only), subtle film grain.
+
+## Design: matched to itzfizz.com
+
+Colours were sampled from the live site: yellow `#fff355`, ink `#222222`, plus its pink, lilac and blue illustration colours. The look follows the same language: white page with a faint yellow grid, black pill navigation, bold geometric type, thick black outlines with hard offset shadows, a yellow disc behind the hero subject, and playful outlined doodles. The car photo's neon outlines were hue-shifted from lime to the brand yellow.
+
+Copy, stats and nav links live in `lib/hero-content.ts`. The stats are **sample numbers** and the nav links (except Home) are placeholders: replace them with real content.
 
 ## Run it
 
@@ -42,7 +48,7 @@ components/hero/          presentational components (markup only)
     scroll-scene.ts       pinned, scroll-scrubbed scene
     particles.ts          recycled particle pool (no per-frame allocation)
     use-hero-animation.ts wires both up; handles prefers-reduced-motion
-components/custom-cursor.tsx   mouse-only cursor
+components/custom-cursor.tsx   mouse-only cursor (yellow dot + ring)
 lib/smooth-scroll.ts      Lenis wired into GSAP's ticker
 lib/gsap.ts               plugin registration (one place)
 lib/hero-content.ts       all copy and stats: edit here
