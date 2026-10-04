@@ -31,11 +31,12 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build static site
+      - name: Build
         run: pnpm build
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
