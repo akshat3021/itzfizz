@@ -4,7 +4,7 @@ A hero section where a paper plane flies across the screen as you scroll. Built 
 
 ![Preview](docs/preview.jpg)
 
-**Live demo:** _add your GitHub Pages URL here_
+**Live demo:** https://akshat3021.github.io/itzfizz
 
 ## What it does
 
@@ -81,4 +81,3 @@ Everything lives in `components/hero/animation/config.ts`: pin length, smoothing
 2. **Settings → Pages → Source: GitHub Actions.**
 3. The workflow in `.github/workflows/deploy.yml` builds and publishes. The base path comes from the repo name automatically.
 
-If the repo is named `<username>.github.io`, set `NEXT_PUBLIC_BASE_PATH` to an empty string in the workflow.
